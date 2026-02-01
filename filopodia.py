@@ -4,6 +4,10 @@
 Created on Wed Feb 23 10:57:50 2022
 
 @author: eric
+
+Edited by: Jannik Dubrau
+Reason: Research Internship
+Date: 01 February 2026
 """
 
 import numpy as np
