@@ -33,11 +33,11 @@ import descartes
 #42
 seed = 42
 np.random.seed(seed=seed)
-interest = [20]   #50
+interest = [20]   #Follow a certain Front
 verfolgx = []
 verfolgy = []
-gil = True
-update = (gil and False)
+gil = True ## Gil for Gillespie algorith
+update = (gil and False) #only for discplay, if true parameter updates for interest FRONT are printed
 start = time.time()
 collect = []
 
@@ -47,12 +47,14 @@ b = 0.7	#0.8
 tau = 100 	#12.5
 I = 0.0		#0.5
 tau_l = 12.5
+## Function für Solver
 def func(t,y):
 	return [(y[0]-1/20*(y[0]**3)-y[1])/tau_l+I, (y[0]+a-b*y[1])/tau]
 
 def lfunc(t):
     return 7*t*np.exp(-0.5*t)
 
+#Hauptfuntkion
 def sample_gil(FRONT, type, angs = [], lens = [], tims = [], inhib = [], first = False):
     filo= angs.copy()
     # if(not first): print("Start: ", filo[interest])
@@ -69,6 +71,7 @@ def sample_gil(FRONT, type, angs = [], lens = [], tims = [], inhib = [], first =
     yinds = []
 
     for f in range(len(FRONT)):
+        #Initializing the 180° field
         wink = np.round(360*startangs[type[f]-1]/(2*np.pi))
         wink = wink + 360 * (wink < 0)
 
@@ -118,6 +121,8 @@ def sample_gil(FRONT, type, angs = [], lens = [], tims = [], inhib = [], first =
             # print(prop)
             # print(prop[0])
             # print(filo)
+
+            ##Check which integer angle in the 180° zone is "free", according to code
             for i in range(360):
                 if ((i > upper) and (i < lower)) or (((i-360) < lower) and (i > upper)) or (((i+360) > upper ) and (i < lower)):
                     prop[i] = 0
@@ -132,6 +137,7 @@ def sample_gil(FRONT, type, angs = [], lens = [], tims = [], inhib = [], first =
             # if(f == interest): print("K: ", k)
             # k[0] = B50/(F+B50)*c
             new = False
+            ##if birth
             if(np.random.uniform(0,1) < k[0]/np.sum(k)):
                 # if(f == interest): print("Birth")
                 s = np.sum(prop)
@@ -152,7 +158,7 @@ def sample_gil(FRONT, type, angs = [], lens = [], tims = [], inhib = [], first =
                 new = True
                 # new = False
                 # if(f == interest): print("Draw len: ", lengths[f][-1])
-            else:
+            else: ##if death
                 
                 ind = np.random.randint(0,F)
                 # if(f == interest): print("Death of ", ind)
@@ -164,6 +170,8 @@ def sample_gil(FRONT, type, angs = [], lens = [], tims = [], inhib = [], first =
 
         pops=[]
         # if(f==interest): print("Bevor: ", lengths[f])
+
+        ##Growth of Filopodia, excluding new one
         for i in range(len(filo[f])-new):
             ### Standard
             # lengths[f][i] += (lengths[f][i]-a) * c_l * tau + np.random.normal(0,sigma)
@@ -172,7 +180,7 @@ def sample_gil(FRONT, type, angs = [], lens = [], tims = [], inhib = [], first =
             times[f][i] += dt*60
             # lengths[f][i] = lfunc(times[f][i])
 
-            ##Fitz
+            ##Fitz, simulated for time step with solver, then take the last value
             sol = solve_ivp(func, [0,dt*60], [lengths[f][i],inhibs[f][i]])
             lengths[f][i] = sol.y[0][-1]
             inhibs[f][i] = sol.y[1][-1]
@@ -190,13 +198,15 @@ def sample_gil(FRONT, type, angs = [], lens = [], tims = [], inhib = [], first =
         
         counter = 0
         # if(f==interest): print("Pops: ", pops)
+
+        ##Kill all that are smaller than 0
         for p in pops:
             lengths[f].pop(p-counter)
             filo[f].pop(p-counter)
             inhibs[f].pop(p-counter)
             counter += 1
     
-        ###Berechnung wo
+        ###Calculate where filopodium is based on angle and length
         tempx = []
         tempy = []
 
@@ -234,7 +244,7 @@ def update_parameters(FRONTLOC, filo, lengths, xfil, yfil):
             lengths[f][i] = new_len/CONVFAC
             filo[f][i] = np.rad2deg(new_ang)       
 
-
+##Average growth vector
 def average_vec(angs, lengths):
     
     erg = []
@@ -895,6 +905,7 @@ def run_gc(c_st, sl_st, A_magnet, perc_ablation, c_magnet=35, sl_magnet=0.4):
                         ax[1].plot([FRONTLOC[i][0], xfil[i][j]], [FRONTLOC[i][1], yfil[i][j]], c='w', lw=2, alpha=0.3)
                         cols.append('w')
                         
+                        #Wrap arounds for periodic boundary
                         if(xfil[i][j] < 500):
                             x_draw.append(xfil[i][j]-500+1000)
                             start_x = start_x - 500 +1000
@@ -953,6 +964,7 @@ def run_gc(c_st, sl_st, A_magnet, perc_ablation, c_magnet=35, sl_magnet=0.4):
                     elif(y[0] > 750):
                         y[0] = y[0]-750+500
 
+                    ##Periodic boundary for historic data
                     for j in range(1, len(FRONTLOCS_TIME)):
                         seperate = False
                         newx = []
